@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="mb-4">
+    <h1 class="mb-1">Consultar Estado</h1>
+    <p class="text-secondary mb-0" style="font-size:0.9rem;">
+        <span class="text-muted">Servicio:</span> <code>getOrderStatusExtended.do</code>
+        <span class="mx-2 text-muted">|</span>
+        <span class="text-muted">Tienda:</span> <strong>{{ store.name }}</strong>
+    </p>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST" action="/payments/status" class="row g-3">
+            <input type="hidden" name="store_id" value="{{ store.id }}">
+            <div class="col-md-6">
+                <label class="form-label">Order ID (UUID)</label>
+                <input type="text" name="order_id" class="form-control" placeholder="Ej: 70906e55-7114-41d6...">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Merchant Order Number</label>
+                <input type="text" name="merchant_order_number" class="form-control" placeholder="Número de pedido del comercio">
+            </div>
+            <div class="col-12">
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-info">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        Consultar
+                    </button>
+                    <a href="/stores/{{ store.id }}" class="btn btn-secondary">Volver</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

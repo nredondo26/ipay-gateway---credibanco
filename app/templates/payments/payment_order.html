@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="mb-4">
+    <h1 class="mb-1">Pago con Tarjeta</h1>
+    <p class="text-secondary mb-0" style="font-size:0.9rem;">
+        <span class="text-muted">Servicio:</span> <code>paymentorder.do</code>
+        <span class="mx-2 text-muted">|</span>
+        <span class="text-muted">Tienda:</span> <strong>{{ store.name }}</strong>
+    </p>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST" action="/payments/payment-order" class="row g-3">
+            <input type="hidden" name="store_id" value="{{ store.id }}">
+            <div class="col-12">
+                <label class="form-label">MD Order / Order ID *</label>
+                <input type="text" name="md_order" class="form-control" required placeholder="UUID del pedido registrado">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Número de Tarjeta (PAN) *</label>
+                <input type="text" name="pan" class="form-control" maxlength="20" required placeholder="4000000000000000">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">CVC *</label>
+                <input type="text" name="cvc" class="form-control" maxlength="4" required placeholder="123">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Mes (MM) *</label>
+                <input type="text" name="month" class="form-control" maxlength="2" required placeholder="12">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Año (YYYY) *</label>
+                <input type="text" name="year" class="form-control" maxlength="4" required placeholder="2025">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Nombre del Titular *</label>
+                <input type="text" name="cardholder_name" class="form-control" required placeholder="NOMBRE APELLIDO">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Email</label>
+                <input type="email" name="email" class="form-control" placeholder="cliente@ejemplo.com">
+            </div>
+            <div class="col-12">
+                <div class="alert alert-warning">
+                    <strong>Importante:</strong> En producción, los datos de tarjeta deben manejarse bajo
+                    cumplimiento PCI DSS. Esta funcionalidad es solo para integración tipo Gateway.
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                        Procesar Pago
+                    </button>
+                    <a href="/stores/{{ store.id }}" class="btn btn-secondary">Volver</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

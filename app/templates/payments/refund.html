@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="mb-4">
+    <h1 class="mb-1">Anular Pago</h1>
+    <p class="text-secondary mb-0" style="font-size:0.9rem;">
+        <span class="text-muted">Servicio:</span> <code>refund.do</code>
+        <span class="mx-2 text-muted">|</span>
+        <span class="text-muted">Tienda:</span> <strong>{{ store.name }}</strong>
+    </p>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST" action="/payments/refund" class="row g-3">
+            <input type="hidden" name="store_id" value="{{ store.id }}">
+            <div class="col-md-6">
+                <label class="form-label">Order ID *</label>
+                <input type="text" name="order_id" class="form-control" required placeholder="UUID del pedido">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Monto * <small class="text-muted">(unid. mínimas)</small></label>
+                <input type="number" name="amount" class="form-control" required placeholder="10000">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Merchant Order N° <small class="text-muted">(MCC 4722)</small></label>
+                <input type="text" name="merchant_order_number" class="form-control" placeholder="ORD-XXX">
+            </div>
+            <div class="col-12">
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-warning">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                        Anular Pago
+                    </button>
+                    <a href="/stores/{{ store.id }}" class="btn btn-secondary">Volver</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

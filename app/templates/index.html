@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="mb-1">Panel de Control</h1>
+        <p class="text-secondary mb-0" style="font-size:0.9rem;">Pasarela de Pagos CredibanCo iPay — Integrador Multi-Tienda</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/stores/new" class="btn btn-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nueva Tienda
+        </a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-6">
+        <div class="stat-card primary p-3">
+            <div class="stat-label">Tiendas</div>
+            <div class="stat-value">{{ store_count }}</div>
+            <small class="text-muted">Comercios activos</small>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card success p-3">
+            <div class="stat-label">Hoy</div>
+            <div class="stat-value">{{ today_count }}</div>
+            <small class="text-muted">{{ today_approved }} aprobadas</small>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card warning p-3">
+            <div class="stat-label">Monto Hoy</div>
+            <div class="stat-value">${{ "{:,.0f}".format(today_amount) }}</div>
+            <small class="text-muted">COP</small>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card purple p-3">
+            <div class="stat-label">Histórico</div>
+            <div class="stat-value">{{ txn_count }}</div>
+            <small class="text-muted">Transacciones totales</small>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px;"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                    Tiendas / Comercios
+                </span>
+                <a href="/stores" class="btn btn-sm btn-outline-primary">Ver todas</a>
+            </div>
+            <div class="card-body p-0">
+                {% if stores %}
+                <div class="list-group list-group-flush">
+                    {% for store in stores %}
+                    <a href="/stores/{{ store.id }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ store.name }}</strong>
+                            <div class="d-flex gap-1 mt-1">
+                                {% if store.environment == "test" %}
+                                <span class="badge bg-warning" style="font-size:0.6rem;">PRUEBAS</span>
+                                {% else %}
+                                <span class="badge bg-danger" style="font-size:0.6rem;">PRODUCCIÓN</span>
+                                {% endif %}
+                                <span class="badge bg-primary" style="font-size:0.6rem;">{{ {'normal': 'Normal', 'restaurant': 'Rest.', 'airline': 'Aero.', 'travel_agency': 'MCC4722'}.get(store.mcc_type, store.mcc_type) }}</span>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-secondary">{{ store.transactions|length }}</span>
+                            <div><small class="text-muted">{{ store.api_username }}</small></div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5" style="margin-bottom:12px;"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                    <p class="text-muted mb-2">No hay tiendas configuradas</p>
+                    <a href="/stores/new" class="btn btn-primary btn-sm">Crear Primera Tienda</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px;"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    Últimas Transacciones
+                </span>
+                <a href="/transactions" class="btn btn-sm btn-outline-primary">Ver todas</a>
+            </div>
+            <div class="card-body p-0">
+                {% if recent_txns %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Tienda</th>
+                                <th>Servicio</th>
+                                <th>Monto</th>
+                                <th>Estado</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for txn in recent_txns %}
+                            <tr>
+                                <td><span class="text-muted">{{ txn.id }}</span></td>
+                                <td><small>{{ txn.store.name }}</small></td>
+                                <td><code>{{ txn.service }}</code></td>
+                                <td><strong>${{ "{:,.0f}".format(txn.amount) if txn.amount else '-' }}</strong></td>
+                                <td>
+                                    {% if txn.status == "success" %}
+                                    <span class="badge bg-success">Aprobada</span>
+                                    {% elif txn.status == "error" %}
+                                    <span class="badge bg-danger">Rechazada</span>
+                                    {% elif txn.status == "pending" %}
+                                    <span class="badge bg-warning">Pendiente</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">{{ txn.status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td><a href="/transactions/{{ txn.id }}" class="btn btn-sm btn-light">Ver</a></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5" style="margin-bottom:12px;"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    <p class="text-muted mb-0">Sin transacciones aún</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mt-2">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                Servicios iPay
+            </div>
+            <div class="card-body">
+                <div class="row g-2">
+                    <div class="col-6 col-md-4">
+                        <div class="service-box">
+                            <div class="service-name">register.do</div>
+                            <div class="service-desc">Registro de pedido</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <div class="service-box">
+                            <div class="service-name">paymentorder.do</div>
+                            <div class="service-desc">Pago con tarjeta</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <div class="service-box">
+                            <div class="service-name">getOrderStatus</div>
+                            <div class="service-desc">Estado del pedido</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <div class="service-box">
+                            <div class="service-name">refund.do</div>
+                            <div class="service-desc">Anulación de pago</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <div class="service-box">
+                            <div class="service-name">verifyCard.do</div>
+                            <div class="service-desc">Verificar tarjeta</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <div class="service-box">
+                            <div class="service-name">PSE status</div>
+                            <div class="service-desc">Estado PSE</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px;"><path d="M4 2v20l4-4 4 4 4-4 4 4V2z"/><path d="M16 6h.01"/><path d="M8 10h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M16 10h.01"/><path d="M8 6h.01"/></svg>
+                Tipos MCC Soportados
+            </div>
+            <div class="card-body">
+                <div class="row g-2">
+                    {% for mt in mcc_types %}
+                    <div class="col-6">
+                        <div class="mcc-box">
+                            <div class="mcc-name">{{ mt.name }}</div>
+                            <div class="mcc-desc">
+                                {% if mt.id == 'normal' %}
+                                IVA, IAC opc, Tips opc, AirTax opc
+                                {% elif mt.id == 'restaurant' %}
+                                IVA, IAC req, Tips opc
+                                {% elif mt.id == 'airline' %}
+                                IVA, AirTax, airlineCode/Name
+                                {% elif mt.id == 'travel_agency' %}
+                                Dispersión: airline{} + agency{}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="text-center mt-4 pt-3 border-top" style="border-color:var(--border-color) !important;">
+    <small class="text-muted">
+        iPay Gateway v1.0 — Integrador Tecnológico CredibanCo
+        <span class="mx-2">|</span>
+        <a href="https://ecouat.credibanco.com/mportal/#login" target="_blank">Portal iPay Sandbox</a>
+        <span class="mx-2">|</span>
+        <span>Callback: <code>http://localhost:8000/webhook/callback</code></span>
+    </small>
+</div>
+{% endblock %}

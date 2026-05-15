@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="mb-1">{{ store.name }}</h1>
+        <p class="text-secondary mb-0" style="font-size:0.9rem;">
+            <span class="text-muted">API:</span> <code>{{ store.api_username }}</code>
+            <span class="mx-2 text-muted">|</span>
+            <span class="text-muted">MCC:</span> <span class="badge bg-primary" style="font-size:0.65rem;">{{ store.mcc_type }}</span>
+            <span class="mx-2 text-muted">|</span>
+            <span class="text-muted">Ambiente:</span>
+            {% if store.environment == "test" %}
+            <span class="badge bg-warning" style="font-size:0.65rem;">Pruebas</span>
+            {% else %}
+            <span class="badge bg-danger" style="font-size:0.65rem;">Producción</span>
+            {% endif %}
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/stores/{{ store.id }}" class="btn btn-outline-primary btn-sm">POS Terminal</a>
+        <a href="/payments/register/{{ store.id }}" class="btn btn-success btn-sm">Registrar Pago</a>
+        <a href="/payments/status/{{ store.id }}" class="btn btn-info btn-sm">Consultar Estado</a>
+        <a href="/payments/refund/{{ store.id }}" class="btn btn-warning btn-sm">Anular</a>
+        <a href="/payments/payment-order/{{ store.id }}" class="btn btn-primary btn-sm">Pago Tarjeta</a>
+        <a href="/payments/verify-card/{{ store.id }}" class="btn btn-secondary btn-sm">Verificar</a>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header">Configuración</div>
+            <div class="card-body">
+                <form method="POST" action="/stores/{{ store.id }}/edit">
+                    <div class="mb-2">
+                        <label class="form-label">Nombre</label>
+                        <input type="text" name="name" class="form-control" value="{{ store.name }}" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Descripción</label>
+                        <input type="text" name="description" class="form-control" value="{{ store.description or '' }}">
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col">
+                            <label class="form-label">API Username</label>
+                            <input type="text" name="api_username" class="form-control" value="{{ store.api_username }}" required>
+                        </div>
+                        <div class="col">
+                            <label class="form-label">API Password</label>
+                            <input type="text" name="api_password" class="form-control" value="{{ store.api_password }}" required>
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col">
+                            <label class="form-label">Terminal</label>
+                            <input type="text" name="terminal_code" class="form-control" value="{{ store.terminal_code or '' }}">
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Código Comercio</label>
+                            <input type="text" name="commerce_code" class="form-control" value="{{ store.commerce_code or '' }}">
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Operador</label>
+                            <input type="text" name="operator_user" class="form-control" value="{{ store.operator_user or '' }}">
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col">
+                            <label class="form-label">Ambiente</label>
+                            <select name="environment" class="form-select">
+                                {% for env in environments %}
+                                <option value="{{ env.id }}" {% if store.environment == env.id %}selected{% endif %}>{{ env.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Tipo MCC</label>
+                            <select name="mcc_type" class="form-select">
+                                {% for mt in mcc_types %}
+                                <option value="{{ mt.id }}" {% if store.mcc_type == mt.id %}selected{% endif %}>{{ mt.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Activo</label>
+                            <select name="is_active" class="form-select">
+                                <option value="true" {% if store.is_active %}selected{% endif %}>Sí</option>
+                                <option value="false" {% if not store.is_active %}selected{% endif %}>No</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Callback URL</label>
+                        <input type="url" name="callback_url" class="form-control" value="{{ store.callback_url or '' }}">
+                        <div class="form-text">Global: <code>http://localhost:8000/webhook/callback</code></div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Fail Callback URL</label>
+                        <input type="url" name="fail_callback_url" class="form-control" value="{{ store.fail_callback_url or '' }}">
+                    </div>
+
+                    <div class="section-title mb-3 mt-4">Impuestos por Segmento MCC</div>
+                    <div class="card mb-3" style="background:rgba(59,130,246,.04);border:1px solid var(--accent-blue);border-color:var(--border-light);">
+                        <div class="card-body py-2">
+                            <p class="small text-muted mb-2">Selecciona los impuestos que aplican. Los desmarcados se tratarán como exentos.</p>
+                            <input type="hidden" name="tax_exceptions" id="tax_exceptions" value="{{ store_tax_exceptions | join(',') }}">
+                            <div id="tax-checkboxes" class="row g-2"></div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header">Resumen</div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush" style="border:0;">
+                    <li class="list-group-item d-flex justify-content-between"><span class="text-muted">ID</span><span>{{ store.id }}</span></li>
+                    <li class="list-group-item d-flex justify-content-between"><span class="text-muted">API Username</span><code>{{ store.api_username }}</code></li>
+                    <li class="list-group-item d-flex justify-content-between"><span class="text-muted">Terminal</span><span>{{ store.terminal_code or 'N/A' }}</span></li>
+                    <li class="list-group-item d-flex justify-content-between"><span class="text-muted">Comercio</span><span>{{ store.commerce_code or 'N/A' }}</span></li>
+                    <li class="list-group-item d-flex justify-content-between"><span class="text-muted">Ambiente</span><span class="badge bg-{{ 'warning' if store.environment == 'test' else 'danger' }}">{{ store.environment | upper }}</span></li>
+                    <li class="list-group-item d-flex justify-content-between"><span class="text-muted">Tipo</span><span class="badge bg-primary">{{ {'normal': 'Comercio Normal', 'restaurant': 'Restaurante', 'airline': 'Aerolínea', 'travel_agency': 'Agencia Viajes (MCC 4722)'}.get(store.mcc_type, store.mcc_type) }}</span></li>
+                    <li class="list-group-item d-flex justify-content-between"><span class="text-muted">URL Base</span><code style="font-size:0.65rem;">https://{{ 'eco' if store.environment == 'production' else 'ecouat' }}.credibanco.com/{{ 'proxy' if store.mcc_type == 'travel_agency' else 'payment' }}/rest/</code></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">Últimas Transacciones</div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Servicio</th>
+                            <th>Estado</th>
+                            <th>Error</th>
+                            <th>Fecha</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for txn in transactions %}
+                        <tr>
+                            <td><span class="text-muted">{{ txn.id }}</span></td>
+                            <td><code>{{ txn.service }}</code></td>
+                            <td>
+                                {% if txn.status == "success" %}
+                                <span class="badge bg-success">OK</span>
+                                {% elif txn.status == "error" %}
+                                <span class="badge bg-danger">Error</span>
+                                {% else %}
+                                <span class="badge bg-warning">{{ txn.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td><small class="text-muted">{{ txn.error_code or '-' }}</small></td>
+                            <td><small class="text-muted">{{ txn.created_at.strftime('%H:%M %d/%m') }}</small></td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="5" class="text-center text-muted py-4">Sin transacciones</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="mt-3">
+            <form method="POST" action="/stores/{{ store.id }}/delete" onsubmit="return confirm('¿Eliminar esta tienda y todas sus transacciones?')">
+                <button type="submit" class="btn btn-danger btn-sm">Eliminar Tienda</button>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+const TAX_MAP = {{ tax_checkboxes_map | tojson }};
+const STORE_EXCEPTIONS = {{ store_tax_exceptions | tojson }};
+
+function updateTaxCheckboxes() {
+    const mcc = document.querySelector('[name="mcc_type"]').value;
+    const container = document.getElementById('tax-checkboxes');
+    const taxes = TAX_MAP[mcc] || TAX_MAP['normal'];
+    container.innerHTML = taxes.map(t => `
+        <div class="col-md-4">
+            <div class="form-check">
+                <input type="checkbox" class="form-check-input tax-check" id="tax-${t.key}" value="${t.key}" ${STORE_EXCEPTIONS.includes(t.key) ? '' : 'checked'} onchange="syncTaxExceptions()">
+                <label class="form-check-label" for="tax-${t.key}" style="text-transform:none;letter-spacing:0;font-size:0.85rem;color:var(--text-primary);">${t.label}</label>
+            </div>
+        </div>
+    `).join('');
+    syncTaxExceptions();
+}
+
+function syncTaxExceptions() {
+    const checks = document.querySelectorAll('.tax-check');
+    const exempted = [];
+    checks.forEach(c => { if (!c.checked) exempted.push(c.value); });
+    document.getElementById('tax_exceptions').value = exempted.join(',');
+}
+
+document.querySelector('[name="mcc_type"]').addEventListener('change', updateTaxCheckboxes);
+updateTaxCheckboxes();
+</script>
+{% endblock %}

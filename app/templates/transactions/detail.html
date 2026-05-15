@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="mb-1">Transacción #{{ txn.id }}</h1>
+        <p class="text-secondary mb-0" style="font-size:0.9rem;">
+            <span class="text-muted">Tienda:</span> <a href="/stores/{{ txn.store_id }}">{{ txn.store.name }}</a>
+            <span class="mx-2 text-muted">|</span>
+            <span class="text-muted">Servicio:</span> <code>{{ txn.service }}</code>
+        </p>
+    </div>
+    <a href="/transactions" class="btn btn-outline-secondary btn-sm">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        Volver
+    </a>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">Resumen</div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <tr><th style="width:35%;">ID</th><td>{{ txn.id }}</td></tr>
+                    <tr><th>Tienda</th><td><a href="/stores/{{ txn.store_id }}">{{ txn.store.name }}</a></td></tr>
+                    <tr><th>Servicio</th><td><code>{{ txn.service }}</code></td></tr>
+                    <tr><th>Order ID</th><td><code>{{ txn.order_id or '-' }}</code></td></tr>
+                    <tr><th>Merchant Order</th><td><code>{{ txn.merchant_order_number or '-' }}</code></td></tr>
+                    <tr><th>Monto</th><td><strong>${{ "{:,.0f}".format(txn.amount) if txn.amount else '0' }}</strong></td></tr>
+                    <tr><th>Moneda</th><td>{{ txn.currency }}</td></tr>
+                    <tr>
+                        <th>Estado</th>
+                        <td>
+                            {% if txn.status == "success" %}
+                            <span class="badge bg-success">Aprobada</span>
+                            {% elif txn.status == "error" %}
+                            <span class="badge bg-danger">Rechazada</span>
+                            {% elif txn.status == "pending" %}
+                            <span class="badge bg-warning">Pendiente</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ txn.status }}</span>
+                            {% endif %}
+                            {% if txn.order_status %}
+                            <small class="text-muted">(orderStatus: {{ txn.order_status }})</small>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% if txn.action_code %}
+                    <tr><th>Action Code</th><td>{{ txn.action_code }}</td></tr>
+                    {% endif %}
+                    {% if txn.auth_code %}
+                    <tr><th>Auth Code</th><td><code>{{ txn.auth_code }}</code></td></tr>
+                    {% endif %}
+                    {% if txn.card_mask %}
+                    <tr><th>Tarjeta</th><td><code>{{ txn.card_mask }}</code></td></tr>
+                    {% endif %}
+                    {% if txn.error_code and txn.error_code != '0' %}
+                    <tr><th>Error Code</th><td><span class="badge bg-danger">{{ txn.error_code }}</span></td></tr>
+                    {% endif %}
+                    {% if txn.error_message %}
+                    <tr><th>Mensaje</th><td><small class="text-danger">{{ txn.error_message }}</small></td></tr>
+                    {% endif %}
+                    <tr><th>Fecha</th><td>{{ txn.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header">Request</div>
+            <div class="card-body p-0">
+                <pre><code>{{ txn.request_data or 'N/A' }}</code></pre>
+            </div>
+        </div>
+        <div class="card mb-3">
+            <div class="card-header">Response</div>
+            <div class="card-body p-0">
+                <pre><code>{{ txn.response_data or 'N/A' }}</code></pre>
+            </div>
+        </div>
+        {% if txn.status == "success" and txn.service == "register_order" and txn.order_id %}
+        <div class="card">
+            <div class="card-header">Acciones</div>
+            <div class="card-body">
+                <div class="d-flex gap-2 flex-wrap">
+                    <a href="/payments/status/{{ txn.store_id }}" class="btn btn-info btn-sm">Consultar Estado</a>
+                    <a href="/payments/refund/{{ txn.store_id }}" class="btn btn-warning btn-sm">Anular Pago</a>
+                    <a href="/payments/payment-order/{{ txn.store_id }}" class="btn btn-secondary btn-sm">Pago Directo</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

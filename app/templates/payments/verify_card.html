@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="mb-4">
+    <h1 class="mb-1">Verificar Tarjeta</h1>
+    <p class="text-secondary mb-0" style="font-size:0.9rem;">
+        <span class="text-muted">Servicio:</span> <code>verifyCard.do</code>
+        <span class="mx-2 text-muted">|</span>
+        <span class="text-muted">Tienda:</span> <strong>{{ store.name }}</strong>
+    </p>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST" action="/payments/verify-card" class="row g-3">
+            <input type="hidden" name="store_id" value="{{ store.id }}">
+            <div class="col-md-6">
+                <label class="form-label">Número de Tarjeta *</label>
+                <input type="text" name="pan" class="form-control" maxlength="20" required placeholder="4000000000000000">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">CVC *</label>
+                <input type="text" name="cvc" class="form-control" maxlength="4" required placeholder="123">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Expiración (YYYYMM) *</label>
+                <input type="text" name="expiry" class="form-control" maxlength="6" required placeholder="202512">
+            </div>
+            <div class="col-12">
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-secondary">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                        Verificar
+                    </button>
+                    <a href="/stores/{{ store.id }}" class="btn btn-secondary">Volver</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

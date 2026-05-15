@@ -1,0 +1,430 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <h1 class="mb-0">{{ store.name }}</h1>
+            {% if store.environment == "test" %}
+            <span class="badge bg-warning" style="font-size:0.65rem;">PRUEBAS</span>
+            {% else %}
+            <span class="badge bg-danger" style="font-size:0.65rem;">PRODUCCIÓN</span>
+            {% endif %}
+            {% if not store.is_active %}
+            <span class="badge bg-secondary" style="font-size:0.65rem;">INACTIVA</span>
+            {% endif %}
+        </div>
+        <div class="d-flex gap-3" style="font-size:0.8rem;">
+            <span class="text-muted">MCC: <span class="badge bg-primary" style="font-size:0.65rem;">{{ {'normal': 'Normal', 'restaurant': 'Restaurante', 'airline': 'Aerolínea', 'travel_agency': 'Agencia Viajes (MCC 4722)'}.get(store.mcc_type, store.mcc_type) }}</span></span>
+            <span class="text-muted">API: <code>{{ store.api_username }}</code></span>
+            <span class="text-muted">Terminal: <code>{{ store.terminal_code or 'N/A' }}</code></span>
+        </div>
+    </div>
+    <div>
+        <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#configModal">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            Configurar
+        </button>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-6">
+        <div class="stat-card primary p-3">
+            <div class="stat-label">Registros Hoy</div>
+            <div class="stat-value">{{ stats.today_count }}</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card success p-3">
+            <div class="stat-label">Aprobadas Hoy</div>
+            <div class="stat-value">{{ stats.today_approved }}</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card warning p-3">
+            <div class="stat-label">Monto Hoy</div>
+            <div class="stat-value">${{ "{:,.0f}".format(stats.today_amount) }}</div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card purple p-3">
+            <div class="stat-label">Total Txns</div>
+            <div class="stat-value">{{ stats.total_count }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-4">
+        <div class="card terminal-card h-100">
+            <div class="card-header text-center" style="border-bottom-color:var(--border-light);">
+                <div style="font-size:1.1rem;font-weight:700;letter-spacing:0.1em;background:linear-gradient(90deg,var(--accent-blue),var(--accent-cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;">iPAY POS</div>
+                <small class="text-muted" style="font-size:0.7rem;">Terminal Virtual — {{ store.terminal_code or 'N/A' }}</small>
+            </div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <label class="small text-muted">Monto (unidades mínimas)</label>
+                    <input type="number" id="pos-amount" class="form-control form-control-sm" placeholder="Ej: 10000 = $100 COP">
+                </div>
+                <div class="mb-2">
+                    <label class="small text-muted">Número de Pedido</label>
+                    <input type="text" id="pos-order" class="form-control form-control-sm" value="{{ 'ORD-' ~ store.id ~ '-' ~ range(1000, 9999) | random }}">
+                </div>
+                <div class="mb-2">
+                    <label class="small text-muted">Descripción</label>
+                    <input type="text" id="pos-desc" class="form-control form-control-sm" placeholder="Pago tienda {{ store.name }}">
+                </div>
+                <div class="mb-2">
+                    <label class="small text-muted">Email Cliente</label>
+                    <input type="email" id="pos-email" class="form-control form-control-sm" placeholder="cliente@ejemplo.com">
+                </div>
+                <div class="d-grid gap-2 mt-3">
+                    <button class="btn btn-success btn-sm" onclick="generatePaymentLink({{ store.id }})">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                        Generar Link de Pago
+                    </button>
+                    <button class="btn btn-primary btn-sm" onclick="quickRegister({{ store.id }})">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        Registrar Pedido
+                    </button>
+                </div>
+                <div id="pos-result" class="mt-2 small"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                Servicios Rápidos
+            </div>
+            <div class="card-body">
+                <div class="row g-2">
+                    <div class="col-6">
+                        <a href="/payments/register/{{ store.id }}" class="btn btn-outline-primary btn-sm w-100 quick-action" style="padding:0.6rem 0.5rem;">
+                            <div class="fw-bold" style="font-size:0.8rem;">Registrar Pago</div>
+                            <small class="text-muted">register.do</small>
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="/payments/status/{{ store.id }}" class="btn btn-outline-primary btn-sm w-100 quick-action" style="padding:0.6rem 0.5rem;color:var(--accent-cyan);border-color:rgba(6,182,212,.3);">
+                            <div class="fw-bold" style="font-size:0.8rem;">Consultar Estado</div>
+                            <small class="text-muted">getOrderStatus</small>
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="/payments/refund/{{ store.id }}" class="btn btn-outline-primary btn-sm w-100 quick-action" style="padding:0.6rem 0.5rem;color:var(--accent-amber);border-color:rgba(245,158,11,.3);">
+                            <div class="fw-bold" style="font-size:0.8rem;">Anular Pago</div>
+                            <small class="text-muted">refund.do</small>
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="/payments/payment-order/{{ store.id }}" class="btn btn-outline-primary btn-sm w-100 quick-action" style="padding:0.6rem 0.5rem;color:var(--accent-purple);border-color:rgba(139,92,246,.3);">
+                            <div class="fw-bold" style="font-size:0.8rem;">Pago Tarjeta</div>
+                            <small class="text-muted">paymentorder.do</small>
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="/payments/verify-card/{{ store.id }}" class="btn btn-outline-primary btn-sm w-100 quick-action" style="padding:0.6rem 0.5rem;border-color:rgba(255,255,255,.1);">
+                            <div class="fw-bold" style="font-size:0.8rem;">Verificar Tarjeta</div>
+                            <small class="text-muted">verifyCard.do</small>
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <button class="btn btn-outline-primary btn-sm w-100 quick-action" onclick="showPSE({{ store.id }})" style="padding:0.6rem 0.5rem;color:var(--accent-red);border-color:rgba(239,68,68,.3);">
+                            <div class="fw-bold" style="font-size:0.8rem;">Pago PSE</div>
+                            <small class="text-muted">status.do</small>
+                        </button>
+                    </div>
+                </div>
+                <hr>
+                <div style="font-size:0.75rem;">
+                    <span class="text-muted">Endpoint REST:</span><br>
+                    <code style="font-size:0.7rem;">{{ 'https://' + ('eco' if store.environment == 'production' else 'ecouat') + '.credibanco.com/' + ('proxy' if store.mcc_type == 'travel_agency' else 'payment') + '/rest/' }}</code>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px;"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                Link de Pago
+            </div>
+            <div class="card-body">
+                <p class="small text-muted">Comparte este link con tu cliente para que pague desde iPay:</p>
+                <div id="payment-link-box" class="payment-link-box text-center text-muted">
+                    <small>Genera un pedido primero...</small>
+                </div>
+                <div class="mt-2">
+                    <button class="btn btn-sm btn-outline-success w-100" onclick="copyLink()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                        Copiar Link
+                    </button>
+                </div>
+                <hr>
+                <div style="font-size:0.8rem;font-weight:600;">Últimos Links</div>
+                <div class="mt-2" id="recent-links">
+                    {% for txn in recent_payments[:5] if txn.service == 'register_order' and txn.status == 'success' %}
+                    <div class="d-flex justify-content-between align-items-center mb-1" style="font-size:0.75rem;">
+                        <code class="text-truncate" style="max-width:160px;">{{ txn.order_id or 'N/A' }}</code>
+                        <span class="text-nowrap text-muted">${{ txn.amount or 0 }}</span>
+                    </div>
+                    {% else %}
+                    <div class="text-muted" style="font-size:0.75rem;">Ninguno aún</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px;"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            Transacciones Recientes
+        </span>
+        <a href="/transactions?store_id={{ store.id }}" class="btn btn-sm btn-outline-primary">Ver todas</a>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-sm mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Servicio</th>
+                        <th>Order ID</th>
+                        <th>Monto</th>
+                        <th>Estado</th>
+                        <th>Error</th>
+                        <th>Fecha</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for txn in recent_payments %}
+                    <tr>
+                        <td><span class="text-muted">{{ txn.id }}</span></td>
+                        <td><code>{{ txn.service }}</code></td>
+                        <td><code class="text-truncate" style="max-width:150px;display:inline-block;">{{ txn.order_id or '-' }}</code></td>
+                        <td><strong>${{ "{:,.0f}".format(txn.amount) if txn.amount else '-' }}</strong></td>
+                        <td>
+                            {% if txn.status == "success" %}
+                            <span class="badge bg-success">Aprobada</span>
+                            {% elif txn.status == "error" %}
+                            <span class="badge bg-danger">Rechazada</span>
+                            {% elif txn.status == "pending" %}
+                            <span class="badge bg-warning">Pendiente</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ txn.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td><small class="text-muted">{{ txn.error_code or '-' }}</small></td>
+                        <td><small class="text-muted">{{ txn.created_at.strftime('%d/%m %H:%M') }}</small></td>
+                        <td><a href="/transactions/{{ txn.id }}" class="btn btn-sm btn-light">Ver</a></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="8" class="text-center text-muted py-4">No hay transacciones aún</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- PSE Modal -->
+<div class="modal fade" id="pseModal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">Consultar Pago PSE</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="pseForm" method="POST" action="/payments/pse-status">
+            <div class="modal-body">
+                <input type="hidden" name="store_id" value="{{ store.id }}">
+                <div class="mb-3">
+                    <label class="form-label">Order ID</label>
+                    <input type="text" name="order_id" class="form-control" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-danger">Consultar PSE</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            </div>
+        </form>
+    </div></div>
+</div>
+
+<!-- Config Modal -->
+<div class="modal fade" id="configModal" tabindex="-1">
+    <div class="modal-dialog modal-lg"><div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">Configurar {{ store.name }}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form method="POST" action="/stores/{{ store.id }}/edit-config">
+            <input type="hidden" name="tax_exceptions" id="edit_tax_exceptions" value="{{ store_tax_exceptions | join(',') }}">
+            <div class="modal-body">
+                <div class="row g-2">
+                    <div class="col-md-6 mb-2">
+                        <label class="form-label">Nombre</label>
+                        <input type="text" name="name" class="form-control" value="{{ store.name }}" required>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <label class="form-label">API Username</label>
+                        <input type="text" name="api_username" class="form-control" value="{{ store.api_username }}" required>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <label class="form-label">API Password</label>
+                        <input type="text" name="api_password" class="form-control" value="{{ store.api_password }}" required>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <label class="form-label">Ambiente</label>
+                        <select name="environment" class="form-select">
+                            {% for env in environments %}
+                            <option value="{{ env.id }}" {% if store.environment == env.id %}selected{% endif %}>{{ env.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <label class="form-label">Tipo MCC</label>
+                        <select name="mcc_type" id="edit_mcc_type" class="form-select" onchange="editUpdateTaxCheckboxes()">
+                            {% for mt in mcc_types %}
+                            <option value="{{ mt.id }}" {% if store.mcc_type == mt.id %}selected{% endif %}>{{ mt.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <label class="form-label">Código Terminal</label>
+                        <input type="text" name="terminal_code" class="form-control" value="{{ store.terminal_code or '' }}" placeholder="ABC12345">
+                        <div class="form-text">Alfanumérico</div>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <label class="form-label">Código Comercio</label>
+                        <input type="text" name="commerce_code" class="form-control" value="{{ store.commerce_code or '' }}" placeholder="020006961" pattern="[0-9]{9}" title="9 dígitos numéricos">
+                        <div class="form-text">9 dígitos numéricos (permite cero inicial)</div>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <label class="form-label">Callback URL</label>
+                        <input type="url" name="callback_url" class="form-control" value="{{ store.callback_url or '' }}">
+                        <div class="form-text">Global: <code>http://localhost:8000/webhook/callback</code></div>
+                    </div>
+                    <div class="col-12 mb-2">
+                        <div class="form-check">
+                            <input type="checkbox" name="is_active" class="form-check-input" value="true" {% if store.is_active %}checked{% endif %}>
+                            <label class="form-check-label" style="text-transform:none;letter-spacing:0;">Tienda Activa</label>
+                        </div>
+                    </div>
+                    <div class="col-12 mb-2">
+                        <hr>
+                        <div class="section-title">Impuestos por Segmento MCC</div>
+                        <p class="small text-muted mb-2">Marca los impuestos que aplican. Los desmarcados se tratarán como exentos.</p>
+                        <div id="edit-tax-checkboxes" class="row g-2"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            </div>
+        </form>
+    </div></div>
+</div>
+
+<script>
+const TAX_MAP = {{ tax_checkboxes_map | tojson }};
+const CURRENT_EXCEPTIONS = {{ store_tax_exceptions | tojson | safe }};
+
+let lastPaymentLink = '';
+
+function generatePaymentLink(storeId) {
+    const amount = document.getElementById('pos-amount').value;
+    const order = document.getElementById('pos-order').value || 'ORD-' + storeId + '-' + Math.floor(Math.random() * 9000 + 1000);
+    const desc = document.getElementById('pos-desc').value || 'Pago';
+    const email = document.getElementById('pos-email').value;
+    const resultDiv = document.getElementById('pos-result');
+
+    if (!amount || amount <= 0) {
+        resultDiv.innerHTML = '<span class="text-danger">Ingrese un monto valido</span>';
+        return;
+    }
+
+    resultDiv.innerHTML = '<span class="text-info">Generando link de pago...</span>';
+
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/payments/register';
+    form.style.display = 'none';
+
+    const inputs = [
+        ['store_id', storeId],
+        ['order_number', order],
+        ['amount', amount],
+        ['return_url', '{{ store.callback_url or "http://localhost:8000/webhook/callback" }}'],
+        ['language', 'es'],
+        ['description', desc],
+    ];
+    if (email) inputs.push(['email', email]);
+
+    inputs.forEach(([n, v]) => {
+        const el = document.createElement('input');
+        el.name = n; el.value = v;
+        form.appendChild(el);
+    });
+
+    document.body.appendChild(form);
+    form.submit();
+}
+
+function quickRegister(storeId) {
+    generatePaymentLink(storeId);
+}
+
+function showPSE(storeId) {
+    const modal = new bootstrap.Modal(document.getElementById('pseModal'));
+    modal.show();
+}
+
+function copyLink() {
+    if (lastPaymentLink) {
+        navigator.clipboard.writeText(lastPaymentLink).then(() => {
+            alert('Link copiado al portapapeles!');
+        });
+    }
+}
+
+function editUpdateTaxCheckboxes() {
+    const mcc = document.getElementById('edit_mcc_type').value;
+    const container = document.getElementById('edit-tax-checkboxes');
+    const taxes = TAX_MAP[mcc] || TAX_MAP['normal'];
+    container.innerHTML = taxes.map(t => {
+        const checked = !CURRENT_EXCEPTIONS.includes(t.key);
+        return `
+            <div class="col-md-4">
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input edit-tax-check" value="${t.key}" ${checked ? 'checked' : ''} onchange="editSyncTaxExceptions()">
+                    <label class="form-check-label" style="text-transform:none;letter-spacing:0;font-size:0.85rem;">${t.label}</label>
+                </div>
+            </div>
+        `;
+    }).join('');
+    editSyncTaxExceptions();
+}
+
+function editSyncTaxExceptions() {
+    const checks = document.querySelectorAll('.edit-tax-check');
+    const exempted = [];
+    checks.forEach(c => { if (!c.checked) exempted.push(c.value); });
+    document.getElementById('edit_tax_exceptions').value = exempted.join(',');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    if (document.getElementById('edit-tax-checkboxes')) {
+        editUpdateTaxCheckboxes();
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="mb-4">
+    <h1 class="mb-1">Nueva Tienda</h1>
+    <p class="text-secondary mb-0" style="font-size:0.9rem;">Configura un nuevo comercio para integrar con iPay</p>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST" action="/stores/new">
+            <input type="hidden" name="tax_exceptions" id="tax_exceptions" value="">
+
+            <div class="section-title mb-3">Información General</div>
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label class="form-label">Nombre de la Tienda *</label>
+                    <input type="text" name="name" class="form-control" required placeholder="Ej: Mi Tienda Online">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Descripción</label>
+                    <input type="text" name="description" class="form-control" placeholder="Breve descripción del comercio">
+                </div>
+            </div>
+
+            <div class="section-title mb-3">Credenciales iPay</div>
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <label class="form-label">API Username *</label>
+                    <input type="text" name="api_username" class="form-control" required placeholder="usuario-api">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">API Password *</label>
+                    <input type="text" name="api_password" class="form-control" required placeholder="••••••••">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Usuario Operador</label>
+                    <input type="text" name="operator_user" class="form-control" placeholder="operador-portal">
+                </div>
+            </div>
+
+            <div class="section-title mb-3">Configuración del Comercio</div>
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <label class="form-label">Código Terminal</label>
+                    <input type="text" name="terminal_code" class="form-control" placeholder="Ej: ABC12345">
+                    <div class="form-text">Alfanumérico</div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Código Comercio</label>
+                    <input type="text" name="commerce_code" class="form-control" placeholder="Ej: 020006961" pattern="[0-9]{9}" title="9 dígitos numéricos">
+                    <div class="form-text">9 dígitos numéricos (permite cero inicial)</div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Ambiente *</label>
+                    <select name="environment" class="form-select">
+                        {% for env in environments %}
+                        <option value="{{ env.id }}">{{ env.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Tipo MCC *</label>
+                    <select name="mcc_type" id="mcc_type" class="form-select" onchange="updateTaxCheckboxes()">
+                        {% for mt in mcc_types %}
+                        <option value="{{ mt.id }}">{{ mt.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="section-title mb-3">Impuestos por Segmento MCC</div>
+            <div class="card mb-4" style="background:rgba(59,130,246,.04);border:1px solid var(--accent-blue);border-color:var(--border-light);">
+                <div class="card-body">
+                    <p class="small text-muted mb-3">Selecciona los impuestos que aplican para esta tienda. Los impuestos desmarcados se tratarán como exentos y no se enviarán en las peticiones a iPay.</p>
+                    <div id="tax-checkboxes" class="row g-2"></div>
+                </div>
+            </div>
+
+            <div class="section-title mb-3">Callbacks</div>
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label class="form-label">URL Callback (éxito)</label>
+                    <input type="url" name="callback_url" class="form-control" placeholder="http://localhost:8000/webhook/callback">
+                    <div class="form-text">Callback único global: <code>http://localhost:8000/webhook/callback</code></div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">URL Callback (fallo)</label>
+                    <input type="url" name="fail_callback_url" class="form-control" placeholder="http://localhost:8000/payment/failed">
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    Crear Tienda
+                </button>
+                <a href="/stores" class="btn btn-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+const TAX_MAP = {{ tax_checkboxes_map | tojson }};
+
+function updateTaxCheckboxes() {
+    const mcc = document.getElementById('mcc_type').value;
+    const container = document.getElementById('tax-checkboxes');
+    const taxes = TAX_MAP[mcc] || TAX_MAP['normal'];
+    container.innerHTML = taxes.map(t => `
+        <div class="col-md-4">
+            <div class="form-check">
+                <input type="checkbox" class="form-check-input tax-check" id="tax-${t.key}" value="${t.key}" ${t.default ? 'checked' : ''} onchange="syncTaxExceptions()">
+                <label class="form-check-label" for="tax-${t.key}" style="text-transform:none;letter-spacing:0;font-size:0.85rem;color:var(--text-primary);">${t.label}</label>
+            </div>
+        </div>
+    `).join('');
+    syncTaxExceptions();
+}
+
+function syncTaxExceptions() {
+    const checks = document.querySelectorAll('.tax-check');
+    const exempted = [];
+    checks.forEach(c => { if (!c.checked) exempted.push(c.value); });
+    document.getElementById('tax_exceptions').value = exempted.join(',');
+}
+
+updateTaxCheckboxes();
+</script>
+{% endblock %}

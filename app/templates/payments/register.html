@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="mb-4">
+    <h1 class="mb-1">Registrar Pedido</h1>
+    <p class="text-secondary mb-0" style="font-size:0.9rem;">
+        <span class="text-muted">Servicio:</span> <code>register.do</code>
+        <span class="mx-2 text-muted">|</span>
+        <span class="text-muted">Tienda:</span> <strong>{{ store.name }}</strong>
+        <span class="mx-2 text-muted">|</span>
+        <span class="text-muted">MCC:</span> <span class="badge bg-primary" style="font-size:0.65rem;">{{ store.mcc_type | upper }}</span>
+    </p>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST" action="/payments/register" class="row g-3">
+            <input type="hidden" name="store_id" value="{{ store.id }}">
+
+            <div class="section-title mb-1">Información del Pedido</div>
+            <div class="col-md-4">
+                <label class="form-label">Número de Pedido *</label>
+                <input type="text" name="order_number" class="form-control" required>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Monto * <small class="text-muted">(unidades mínimas)</small></label>
+                <input type="number" name="amount" class="form-control" required placeholder="Ej: 10000 = $100 COP">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Moneda</label>
+                <select name="currency" class="form-select">
+                    <option value="COP" selected>COP</option>
+                    <option value="USD">USD</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">URL de Retorno (éxito) *</label>
+                <input type="url" name="return_url" class="form-control" required placeholder="http://localhost:8000/webhook/callback">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">URL de Fallo</label>
+                <input type="url" name="fail_url" class="form-control">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Idioma</label>
+                <select name="language" class="form-select">
+                    <option value="es">Español</option>
+                    <option value="en">English</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Email del pagador</label>
+                <input type="email" name="email" class="form-control" placeholder="cliente@ejemplo.com">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Código de Comercio</label>
+                <input type="text" name="commerce_code" class="form-control" placeholder="{{ store.commerce_code or 'auto' }}">
+            </div>
+
+            <div class="col-12 mt-3">
+                <hr>
+                <div class="section-title">Impuestos y Parámetros — <span class="badge bg-primary" style="font-size:0.65rem;">{{ store.mcc_type }}</span></div>
+            </div>
+
+            {% if store.mcc_type == "travel_agency" %}
+            <div class="col-md-6">
+                <div class="card" style="background:rgba(59,130,246,.05);border-color:rgba(59,130,246,.2);">
+                    <div class="card-body">
+                        <h6 style="font-weight:600;">Aerolínea (Airline)</h6>
+                        <div class="mb-2">
+                            <label class="form-label">Monto tiquete *</label>
+                            <input type="number" name="airline_amount" class="form-control" required>
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                <label class="form-label">Cuotas *</label>
+                                <input type="number" name="airline_installments" class="form-control" required>
+                            </div>
+                            <div class="col">
+                                <label class="form-label">IVA *</label>
+                                <input type="number" name="airline_iva" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col">
+                                <label class="form-label">Air Tax</label>
+                                <input type="number" name="airline_airtax" class="form-control">
+                            </div>
+                            <div class="col">
+                                <label class="form-label">Airline ID *</label>
+                                <input type="text" name="airline_id" class="form-control" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card" style="background:rgba(16,185,129,.05);border-color:rgba(16,185,129,.2);">
+                    <div class="card-body">
+                        <h6 style="font-weight:600;">Agencia (Agency)</h6>
+                        <div class="mb-2">
+                            <label class="form-label">Monto agencia *</label>
+                            <input type="number" name="agency_amount" class="form-control" required>
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                <label class="form-label">Cuotas *</label>
+                                <input type="number" name="agency_installments" class="form-control" required>
+                            </div>
+                            <div class="col">
+                                <label class="form-label">IVA *</label>
+                                <input type="number" name="agency_iva" class="form-control" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            {% for tax in taxes %}
+            <div class="col-md-4">
+                <label class="form-label">
+                    {{ tax.label }}
+                    {% if tax.required %}<span class="text-danger">*</span>{% endif %}
+                </label>
+                {% if 'Code' in tax.label or 'Name' in tax.label %}
+                <input type="text" name="{{ tax.key }}" class="form-control" placeholder="Ej: AV">
+                {% else %}
+                <input type="number" name="{{ tax.key }}" class="form-control" value="0" placeholder="0">
+                {% endif %}
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            <div class="col-12 mt-3">
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-success">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        Registrar Pedido
+                    </button>
+                    <a href="/stores/{{ store.id }}" class="btn btn-secondary">Volver</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

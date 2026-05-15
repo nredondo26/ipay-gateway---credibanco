@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="mb-1">Resultado</h1>
+        <p class="text-secondary mb-0" style="font-size:0.9rem;">
+            <span class="text-muted">Servicio:</span> <code>{{ service }}</code>
+            <span class="mx-2 text-muted">|</span>
+            <span class="text-muted">Tienda:</span> <strong>{{ store.name }}</strong>
+        </p>
+    </div>
+    <a href="/stores/{{ store.id }}" class="btn btn-outline-secondary">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        Volver a Tienda
+    </a>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">Respuesta iPay</div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    {% for key, value in response.items() %}
+                    <tr>
+                        <th style="width:35%;">{{ key }}</th>
+                        <td><code>{{ value }}</code></td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+
+        {% if response.get("formUrl") %}
+        <div class="card mt-3">
+            <div class="card-header">Link de Pago</div>
+            <div class="card-body">
+                <a href="{{ response.formUrl }}" target="_blank" class="btn btn-success">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                    Ir a Pagar
+                </a>
+                <p class="mt-2"><small class="text-muted">URL del formulario de pago iPay</small></p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">Transacción #{{ transaction.id }}</div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <tr>
+                        <th style="width:35%;">Estado</th>
+                        <td>
+                            {% if transaction.status == "success" %}
+                            <span class="badge bg-success">Éxito</span>
+                            {% elif transaction.status == "error" %}
+                            <span class="badge bg-danger">Error</span>
+                            {% else %}
+                            <span class="badge bg-warning">{{ transaction.status }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr><th>Servicio</th><td><code>{{ transaction.service }}</code></td></tr>
+                    {% if transaction.order_id %}
+                    <tr><th>Order ID</th><td><code>{{ transaction.order_id }}</code></td></tr>
+                    {% endif %}
+                    {% if transaction.amount %}
+                    <tr><th>Monto</th><td><strong>${{ transaction.amount }}</strong></td></tr>
+                    {% endif %}
+                    {% if transaction.error_code and transaction.error_code != "0" %}
+                    <tr><th>Error Code</th><td><span class="badge bg-danger">{{ transaction.error_code }}</span></td></tr>
+                    {% endif %}
+                    {% if transaction.error_message %}
+                    <tr><th>Mensaje</th><td><small class="text-danger">{{ transaction.error_message }}</small></td></tr>
+                    {% endif %}
+                    <tr><th>Fecha</th><td>{{ transaction.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td></tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 mt-3">
+            <a href="/payments/register/{{ store.id }}" class="btn btn-sm btn-success">Nuevo Registro</a>
+            <a href="/payments/status/{{ store.id }}" class="btn btn-sm btn-info">Consultar Estado</a>
+            <a href="/payments/refund/{{ store.id }}" class="btn btn-sm btn-warning">Anular</a>
+            <a href="/payments/payment-order/{{ store.id }}" class="btn btn-sm btn-secondary">Pago Directo</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
