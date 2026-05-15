@@ -237,4 +237,5 @@ Callback global único:
 
 ## Licencia
 
-Uso interno — Desarrollado para integración con CredibanCo Colombia.
+CredibanCo proporciona este manual a sus clientes para que puedan integrar sus soluciones de pago.  
+Este proyecto busca acelerar esa integración, ofreciendo una interfaz lista para probar y consumir los servicios iPay de CredibanCo de forma rápida y sencilla.
